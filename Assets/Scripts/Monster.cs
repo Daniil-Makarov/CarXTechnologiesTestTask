@@ -1,32 +1,35 @@
 ﻿using UnityEngine;
-using System.Collections;
 
 public class Monster : MonoBehaviour {
+	private const float m_reachDistance = 0.09f;
+	
+	[SerializeField] private float m_speed = 0.1f;
+	[SerializeField] private int m_maxHP = 30;
+	[SerializeField] private Rigidbody m_rigidbody;
+	
+	private int m_hp;
+	private Transform m_target;
+	private Vector3 m_targetPosition;
 
-	public GameObject m_moveTarget;
-	public float m_speed = 0.1f;
-	public int m_maxHP = 30;
-	const float m_reachDistance = 0.3f;
+	private void Start() => m_hp = m_maxHP;
 
-	public int m_hp;
+	private void FixedUpdate() => m_rigidbody.MovePosition(Vector3.MoveTowards(transform.position, m_targetPosition, m_speed * Time.fixedDeltaTime));
 
-	void Start() {
-		m_hp = m_maxHP;
+	private void OnTriggerEnter(Collider other) {
+		if (other.transform == m_target)
+			Destroy(gameObject);
 	}
 
-	void Update () {
-		if (m_moveTarget == null)
-			return;
-		
-		if (Vector3.Distance (transform.position, m_moveTarget.transform.position) <= m_reachDistance) {
-			Destroy (gameObject);
-			return;
-		}
+	public void SetTarget(Transform target) {
+		m_target = target;
+		m_targetPosition = target.position;
+		m_targetPosition.y = transform.position.y;
+	}
 
-		var translation = m_moveTarget.transform.position - transform.position;
-		if (translation.magnitude > m_speed) {
-			translation = translation.normalized * m_speed;
-		}
-		transform.Translate (translation);
+	public void TakeDamage(int damage) {
+		m_hp -= damage;
+
+		if (m_hp <= 0)
+			Destroy(gameObject);
 	}
 }

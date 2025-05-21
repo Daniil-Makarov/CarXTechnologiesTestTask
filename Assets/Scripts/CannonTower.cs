@@ -1,30 +1,37 @@
 ﻿using UnityEngine;
-using System.Collections;
 
-public class CannonTower : MonoBehaviour {
-	public float m_shootInterval = 0.5f;
-	public float m_range = 4f;
-	public GameObject m_projectilePrefab;
-	public Transform m_shootPoint;
+public class CannonTower : Tower {
+	[SerializeField] private int m_steps = 10;
+	[SerializeField] private Transform m_shootPoint;
+	[SerializeField] private Transform m_base;
+	[SerializeField] private Transform m_cannon;
 
-	private float m_lastShotTime = -0.5f;
+	protected override void Shoot(Collider target) {
+		Vector3 targetPosition = target.transform.position;
+		Rigidbody targetRigidbody = target.attachedRigidbody;
+		Vector3 targetVelocity = targetRigidbody.velocity;
 
-	void Update () {
-		if (m_projectilePrefab == null || m_shootPoint == null)
-			return;
+		Vector3 shootPosition = m_shootPoint.position;
+		float projectileSpeed = m_projectilePrefab.Speed;
 
-		foreach (var monster in FindObjectsOfType<Monster>()) {
-			if (Vector3.Distance (transform.position, monster.transform.position) > m_range)
-				continue;
+		float time = (targetPosition - shootPosition).magnitude / projectileSpeed;
+		Vector3 intersection;
 
-			if (m_lastShotTime + m_shootInterval > Time.time)
-				continue;
-
-			// shot
-			Instantiate(m_projectilePrefab, m_shootPoint.position, m_shootPoint.rotation);
-
-			m_lastShotTime = Time.time;
+		for (int i = 0; i < m_steps; i++) {
+			intersection = targetPosition + targetVelocity * time;
+			float newTime = (intersection - shootPosition).magnitude / projectileSpeed;
+		
+			if (Mathf.Abs(newTime - time) < 0.01f)
+				break;
+		
+			time = newTime;
 		}
 
+		intersection = targetPosition + targetVelocity * time;
+		Vector3 direction = (intersection - shootPosition).normalized;
+		m_base.forward = new Vector3(direction.x, 0, direction.z);
+		m_cannon.forward = direction;
+
+		Instantiate(m_projectilePrefab, m_shootPoint.position, Quaternion.LookRotation(direction));
 	}
 }
